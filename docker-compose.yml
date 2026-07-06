@@ -1,0 +1,93 @@
+name: triosec
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-triosec}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-triosec}
+      POSTGRES_DB: ${POSTGRES_DB:-triosec}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-triosec} -d ${POSTGRES_DB:-triosec}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    command: >
+      zap.sh -daemon -host 0.0.0.0 -port 8090
+      -config api.key=${ZAP_API_KEY}
+      -config api.addrs.addr.name=.*
+      -config api.addrs.addr.regex=true
+    # Lets ZAP reach apps running on the Docker host via http://host.docker.internal
+    # (required on Linux; harmless on macOS/Windows).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8090/JSON/core/view/version/?apikey=${ZAP_API_KEY} | grep -q version || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-triosec}:${POSTGRES_PASSWORD:-triosec}@db:5432/${POSTGRES_DB:-triosec}
+      REDIS_URL: redis://redis:6379/0
+      ZAP_BASE_URL: http://zap:8090
+    volumes:
+      # Read-only view of the user's code workspace, for validating scan paths.
+      - ${WORKSPACE_ROOT:?set WORKSPACE_ROOT in .env}:/workspace:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-triosec}:${POSTGRES_PASSWORD:-triosec}@db:5432/${POSTGRES_DB:-triosec}
+      REDIS_URL: redis://redis:6379/0
+      ZAP_BASE_URL: http://zap:8090
+      TRIVY_CACHE_DIR: /trivy-cache
+    volumes:
+      - ${WORKSPACE_ROOT:?set WORKSPACE_ROOT in .env}:/workspace:ro
+      - trivy-cache:/trivy-cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "${TRIOSEC_PORT:-8080}:80"
+    depends_on:
+      - backend
+
+volumes:
+  pg-data:
+  trivy-cache:

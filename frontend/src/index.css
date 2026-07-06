@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  /* Severity palette — validated for CVD safety; always paired with text labels */
+  --color-critical: #d03b3b;
+  --color-high: #ec835a;
+  --color-medium: #c98500;
+  --color-low: #2a78d6;
+  --color-info: #4a3aa7;
+}
