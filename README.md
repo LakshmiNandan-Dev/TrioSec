@@ -59,6 +59,25 @@ docker compose up -d mailpit
 
 Settings → host `mailpit`, port `1025`, TLS off. Mail arrives at http://localhost:8025.
 
+### Single sign-on with Microsoft Entra ID (optional)
+
+1. In the [Entra admin center](https://entra.microsoft.com): **App registrations → New
+   registration** — single tenant, redirect URI (type **Web**):
+   `http://localhost:8080/api/auth/sso/callback` (match your host/port).
+2. Create a client secret under **Certificates & secrets**.
+3. Fill in `.env`: `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET`,
+   `SSO_REDIRECT_URI` — all four set enables the *Sign in with Microsoft* button;
+   restart with `docker compose up -d backend`.
+
+Notes:
+- Users are auto-provisioned on first SSO login (as non-admin) and cannot use
+  password login; the seeded admin keeps working as a break-glass account.
+- Optional role mapping: define an app role named `TrioSec.Admin` on the registration
+  and assign it to users — it syncs to TrioSec's admin flag on every SSO login
+  (never demoting the last active admin). Without app roles, manage roles in TrioSec.
+- For `npm run dev`, register `http://localhost:5173/api/auth/sso/callback` as an
+  extra redirect URI and point `SSO_REDIRECT_URI` at it (vite proxies `/api`).
+
 ### Try it against something deliberately vulnerable
 
 ```bash

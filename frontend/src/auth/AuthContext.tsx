@@ -6,6 +6,8 @@ import { login as apiLogin } from "../api/endpoints";
 interface AuthValue {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  /** Store a token obtained outside the password flow (e.g. the SSO callback). */
+  loginWithToken: (accessToken: string) => void;
   logout: () => void;
 }
 
@@ -15,12 +17,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const queryClient = useQueryClient();
 
-  const login = async (email: string, password: string) => {
-    const { access_token } = await apiLogin(email, password);
+  const loginWithToken = (accessToken: string) => {
     // Drop any cached data from a previous session (e.g. another user on this browser).
     queryClient.clear();
-    localStorage.setItem(TOKEN_KEY, access_token);
-    setToken(access_token);
+    localStorage.setItem(TOKEN_KEY, accessToken);
+    setToken(accessToken);
+  };
+
+  const login = async (email: string, password: string) => {
+    const { access_token } = await apiLogin(email, password);
+    loginWithToken(access_token);
   };
 
   const logout = () => {
@@ -29,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
   };
 
-  return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ token, login, loginWithToken, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthValue {

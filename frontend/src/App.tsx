@@ -3,6 +3,7 @@ import AdminRoute from "./auth/AdminRoute";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Layout from "./components/Layout";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import LoginPage from "./pages/LoginPage";
 import NewScanPage from "./pages/NewScanPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
@@ -17,6 +18,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<ProjectsPage />} />

@@ -11,7 +11,8 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    # Null for accounts provisioned via SSO — they have no local password.
+    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Role: admin (manage users + settings + scans) vs member (scans only).
     is_admin: Mapped[bool] = mapped_column(default=True)
     # Deactivated accounts keep their audit trail but cannot log in.

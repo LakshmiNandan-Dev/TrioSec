@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.db import SessionLocal
 from app.models import AppSetting, User
-from app.routers import audit, auth, findings, health, projects, reports, scans, users
+from app.routers import audit, auth, findings, health, projects, reports, scans, sso, users
 from app.routers import settings as settings_router
 from app.security import hash_password
 
@@ -35,6 +36,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="TrioSec API", lifespan=lifespan)
 
+# Cookie session used only for the OAuth state/nonce during the SSO redirect
+# dance; API auth stays stateless bearer-token.
+app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret, same_site="lax")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
@@ -46,6 +51,7 @@ app.add_middleware(
 for router in (
     health.router,
     auth.router,
+    sso.router,
     projects.router,
     scans.router,
     findings.router,

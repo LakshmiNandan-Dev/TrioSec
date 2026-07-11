@@ -7,6 +7,9 @@ pydantic==2.10.4
 pydantic-settings==2.7.0
 PyJWT==2.10.1
 bcrypt==4.2.1
+# Entra ID SSO: OIDC client + signed session cookie for the OAuth state/nonce
+authlib==1.6.3
+itsdangerous==2.2.0
 redis==5.2.1
 rq==2.1.0
 httpx==0.28.1

@@ -39,6 +39,11 @@ def change_password(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if user.hashed_password is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "This account signs in with Microsoft SSO and has no local password",
+        )
     if not verify_password(payload.current_password, user.hashed_password):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
     user.hashed_password = hash_password(payload.new_password)

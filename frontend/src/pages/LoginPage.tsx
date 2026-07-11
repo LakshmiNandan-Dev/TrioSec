@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api/client";
+import { getSsoStatus } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 
 export default function LoginPage() {
@@ -10,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const { data: sso } = useQuery({ queryKey: ["sso-status"], queryFn: getSsoStatus });
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -56,6 +59,30 @@ export default function LoginPage() {
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>
+        {sso?.enabled && (
+          <>
+            <div className="my-4 flex items-center gap-3 text-xs text-gray-400">
+              <div className="h-px flex-1 bg-gray-200" />
+              or
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = "/api/auth/sso/login";
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              <svg viewBox="0 0 21 21" className="h-4 w-4" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+              </svg>
+              Sign in with Microsoft
+            </button>
+          </>
+        )}
       </form>
     </div>
   );

@@ -35,6 +35,27 @@ class Settings(BaseSettings):
     # Extra CORS origins for local frontend development (vite dev server).
     cors_origins: str = "http://localhost:5173"
 
+    # Microsoft Entra ID SSO — optional; the "Sign in with Microsoft" flow is
+    # enabled only when all four values are set.
+    entra_tenant_id: str = ""
+    entra_client_id: str = ""
+    entra_client_secret: str = ""
+    # Must exactly match a "Web" redirect URI on the Entra app registration,
+    # e.g. http://localhost:8080/api/auth/sso/callback
+    sso_redirect_uri: str = ""
+
+    @property
+    def sso_enabled(self) -> bool:
+        return all(
+            v.strip()
+            for v in (
+                self.entra_tenant_id,
+                self.entra_client_id,
+                self.entra_client_secret,
+                self.sso_redirect_uri,
+            )
+        )
+
     def validate_secrets(self) -> None:
         if self.jwt_secret.strip().lower() in PLACEHOLDER_SECRETS:
             raise RuntimeError("JWT_SECRET is unset or a placeholder; refusing to start.")

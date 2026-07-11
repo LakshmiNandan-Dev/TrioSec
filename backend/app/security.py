@@ -12,7 +12,9 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
-def verify_password(password: str, hashed: str) -> bool:
+def verify_password(password: str, hashed: str | None) -> bool:
+    if not hashed:  # SSO-provisioned accounts have no local password
+        return False
     try:
         return bcrypt.checkpw(password.encode(), hashed.encode())
     except ValueError:
